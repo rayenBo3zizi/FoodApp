@@ -1,4 +1,7 @@
 from django.db import models
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from .managers import CustomerManager
 
 class ProductCategory(models.TextChoices):
     BURGER = 'burger', 'Burger'
@@ -22,8 +25,8 @@ class TrackingStatus(models.TextChoices):
     ON_THE_WAY = 'on_the_way', 'On the Way'
     DELIVERED = 'delivered', 'Delivered'
 
-class Customer(models.Model):
-    CustomerID = models.AutoField(primary_key=True)
+class Customer(AbstractBaseUser, PermissionsMixin):
+    id = models.AutoField(primary_key=True)
     email = models.EmailField(max_length=255, unique=True)
     password = models.CharField(max_length=255)
     full_name = models.CharField(max_length=255, null=True, blank=True)
@@ -32,6 +35,17 @@ class Customer(models.Model):
     latitude = models.DecimalField(max_digits=10, decimal_places=8, null=True, blank=True)
     longitude = models.DecimalField(max_digits=11, decimal_places=8, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []  # Peut rester vide
+
+    objects = CustomerManager()
+
+    def save(self, *args, **kwargs):
+        if not self.password.startswith("pbkdf2_sha256"):
+            self.password = make_password(self.password)
+        super().save(*args, **kwargs)
+
     class Meta:
         db_table = 'customers'
 

@@ -34,4 +34,28 @@ class OrderTrackingSerializer(serializers.ModelSerializer):
 
 
 
+class CustomerBasicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ( "full_name", "phone")
 
+
+
+
+class AddCustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ['id', 'email', 'password', 'full_name', 'phone']
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
+
+    def validate_email(self, value):
+        # Instance = l'utilisateur actuel lors d'un update
+        customer_id = self.instance.id if self.instance else None
+        
+        # Vérifie si un autre utilisateur (≠ moi) utilise cet email
+        if Customer.objects.exclude(id=customer_id).filter(email=value).exists():
+            raise serializers.ValidationError("Email already exists")
+
+        return value
